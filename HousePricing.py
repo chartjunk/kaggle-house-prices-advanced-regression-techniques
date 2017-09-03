@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+import random
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import mean_squared_error
@@ -333,26 +334,43 @@ def get_model(x: pd.DataFrame, y: pd.Series) -> RandomForestClassifier:
     return clf
 
 
-def main():
-    train_data, test_data = load()
-    full_data = pd.concat({'train': train_data, 'test': test_data})
-    full_data = normalize(full_data) # TODO: additional features?
-    full_data = vectorize(full_data)
-    train_data = full_data.loc["train"]
-    test_data = full_data.loc["test"]
-    x_train, x_test, y_train, y_test = \
-        train_test_split(train_data.drop('SalePrice',1), train_data['SalePrice'], test_size=0.2)
+def get_data() -> (pd.DataFrame, pd.DataFrame):
+    train, test = load()
+    full = pd.concat({'train': train, 'test': test})
+    full = vectorize(normalize(full))  # TODO: additional features?
+    train = full.loc['train']
+    test = full.loc['test'].drop('SalePrice', 1)
+    return train, test
+
+
+def separate_xy(data: pd.DataFrame) -> (pd.DataFrame, pd.DataFrame):
+    return data.drop('SalePrice',1), data['SalePrice']
+
+
+def validate():
+
+    test_size = 0.2
+
+    train_full, _ = get_data()
+    x_train_full, y_train_full = separate_xy(train_full)
+    x_train, x_valid, y_train, y_valid = \
+        train_test_split(x_train_full, y_train_full, test_size=test_size)
     model = get_model(x_train, y_train)
-    y_pred = model.predict(x_test)
-    score = mean_squared_error(y_test, y_pred)**.5
+    y_valid_pred = model.predict(x_valid)
+    score = mean_squared_error(y_valid, y_valid_pred)**.5
+    print('Score = ' + str(score))
 
-    # predict test:
-    test_pred = model.predict(test_data.drop('SalePrice',1))
-    pred = pd.DataFrame({'Id':test_data['Id'],'SalePrice':test_pred})
-    save(pred)
 
-    pass
+def predict():
+    train, x_test = get_data()
+    x_train, y_train = separate_xy(train)
+    model = get_model(x_train, y_train)
+    y_test_pred = model.predict(x_test)
+    test_pred = pd.DataFrame({'Id':x_test['Id'], 'SalePrice':y_test_pred})
+    save(test_pred)
 
 if __name__ == '__main__':
+    random.seed(123)
     pd.set_option('display.width', 160)
-    main()
+    validate()
+    # predict()
