@@ -1,12 +1,10 @@
 import numpy as np
 import pandas as pd
 import random
-from sklearn.linear_model import LassoCV
+from sklearn.linear_model import LassoCV, LogisticRegressionCV, Ridge
 from sklearn.model_selection import cross_val_score, KFold
+from sklearn.tree import DecisionTreeRegressor
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.model_selection import train_test_split
-from sklearn.metrics import mean_squared_error
-from sklearn.preprocessing import LabelBinarizer
 
 
 def rmsle(predicted,real):
@@ -90,7 +88,8 @@ def explore():
     X = train.loc[:,train.columns!='SalePrice']
     y = train.loc[:,'SalePrice']
 
-    model = LassoCV(cv=5)
+    model = Ridge()
+
     # Check consistency with cross validation
     scores = cross_val_score(model, X, y, cv=KFold())
 
@@ -112,7 +111,7 @@ def analyse():
     X = train.loc[:,train.columns!='SalePrice']
     y = train.loc[:,'SalePrice']
     test = test.loc[:,test.columns!='SalePrice']
-    model = LassoCV(cv=5)
+    model = Ridge()
     model.fit(X, y)
     pred = model.predict(test)
     pred = np.expm1(pred)
