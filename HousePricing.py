@@ -2,9 +2,9 @@ import numpy as np
 import pandas as pd
 import random
 from sklearn.linear_model import LassoCV, LogisticRegressionCV, Ridge
-from sklearn.model_selection import cross_val_score, KFold
-from sklearn.tree import DecisionTreeRegressor
-from sklearn.ensemble import RandomForestClassifier
+from sklearn.model_selection import cross_val_score, KFold, GridSearchCV
+from sklearn.preprocessing import StandardScaler
+from sklearn.pipeline import Pipeline
 
 
 def rmsle(predicted,real):
@@ -88,10 +88,41 @@ def explore():
     X = train.loc[:,train.columns!='SalePrice']
     y = train.loc[:,'SalePrice']
 
-    model = Ridge()
+    # Check what are the most significant parameters by coefficients
+    pipeline = Pipeline([
+        ('scaler', StandardScaler()),
+        ('ridge', Ridge())
+    ])
 
-    # Check consistency with cross validation
-    scores = cross_val_score(model, X, y, cv=KFold())
+    pipeline.fit(X, y)
+    top_coefs = pd.DataFrame({'name': list(X), 'abs_coef': np.abs(pipeline.named_steps['ridge'].coef_)})\
+        .sort_values('abs_coef')
+    threshold = np.percentile(top_coefs['abs_coef'], 90)
+    top_coefs = top_coefs.where(lambda r: r['abs_coef'] > threshold).dropna()
+    ax = top_coefs.plot(kind='bar')
+    ax.set_xticklabels(top_coefs['name'], rotation=45)
+
+    # Normalized with StandardScaler, the following params seem to affect the dependant variable the most
+    # * 1st tier
+    # 	* GrLivArea
+    # * 2nd tier
+    # 	* TotalBsmtSF
+    # 	* BsmtCond_TA
+    # * 3rd tier
+    # 	* BsmtCond_Gd
+    # 	* BsmtCond_Fa
+    # 	* YearBuilt
+    # 	* OverallQual
+    # 	* LotArea
+    # 	* RoofMatl_ClyTile
+    # 	* BsmtFinSF1
+    # 	* OverallCond
+    # 	* PoolArea
+    # 	* BsmtQual_TA
+    # 	* BsmtQual_Gd
+    # 	* MSZoning_C (all)
+
+    # TODO: look more into these attributes and see if model could be improved with feature engineering
 
     pass
 
@@ -111,8 +142,10 @@ def analyse():
     X = train.loc[:,train.columns!='SalePrice']
     y = train.loc[:,'SalePrice']
     test = test.loc[:,test.columns!='SalePrice']
+
     model = Ridge()
     model.fit(X, y)
+
     pred = model.predict(test)
     pred = np.expm1(pred)
     save(pd.DataFrame({'SalePrice':pred,'Id':test['Id']}))
@@ -122,5 +155,5 @@ def analyse():
 if __name__ == '__main__':
     random.seed(123)
     pd.set_option('display.width', 160)
-    #explore()
-    analyse()
+    explore()
+    #analyse()
