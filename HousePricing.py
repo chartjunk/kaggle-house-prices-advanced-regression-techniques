@@ -1,8 +1,10 @@
 import numpy as np
 import pandas as pd
 import random
-from sklearn.linear_model import LassoCV, LogisticRegressionCV, Ridge
-from sklearn.model_selection import cross_val_score, KFold
+from sklearn.linear_model import Ridge, Lasso
+from sklearn.model_selection import cross_val_score, KFold, GridSearchCV
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import StandardScaler
 from sklearn.tree import DecisionTreeRegressor
 from sklearn.ensemble import RandomForestClassifier
 
@@ -85,13 +87,22 @@ def explore():
     train = all_data.loc[slice(0,len(train)-1),:]
     test = all_data.loc[slice(len(train), len(all_data)),:]
 
-    X = train.loc[:,train.columns!='SalePrice']
+    X = train.loc[:,train.columns!='SalePrice'] # type: pd.DataFrame
     y = train.loc[:,'SalePrice']
 
-    model = Ridge()
+    pipeline = Pipeline([
+        ('scaler', StandardScaler()),
+        ('ridge', Ridge())
+    ])
+
+    # Define hyperparameter space for ridge. Try different alphas.
+    parameters = {'ridge__alpha': np.logspace(-4, 0)}
+    cv = GridSearchCV(pipeline, parameters, cv=5)
+    cv.fit(X, y)
 
     # Check consistency with cross validation
-    scores = cross_val_score(model, X, y, cv=KFold())
+    scores1 = cross_val_score(cv, X, y, cv=KFold())
+    # Ridge seems pretty good
 
     pass
 
@@ -111,7 +122,16 @@ def analyse():
     X = train.loc[:,train.columns!='SalePrice']
     y = train.loc[:,'SalePrice']
     test = test.loc[:,test.columns!='SalePrice']
-    model = Ridge()
+
+    pipeline = Pipeline([
+        ('scaler', StandardScaler()),
+        ('ridge', Ridge())
+    ])
+
+    # Define hyperparameter space for ridge. Try different alphas.
+    parameters = {'ridge__alpha': np.logspace(-4, 0)}
+    model = GridSearchCV(pipeline, parameters, cv=5)
+
     model.fit(X, y)
     pred = model.predict(test)
     pred = np.expm1(pred)
@@ -122,5 +142,5 @@ def analyse():
 if __name__ == '__main__':
     random.seed(123)
     pd.set_option('display.width', 160)
-    #explore()
-    analyse()
+    explore()
+    #analyse()
