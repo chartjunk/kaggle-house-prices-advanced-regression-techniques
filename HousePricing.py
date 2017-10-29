@@ -49,6 +49,12 @@ def get_missing_feats(data: pd.DataFrame) -> pd.Series:
 def explore():
 
     train, test = load()
+    all_data = pd.concat((train, test)).reset_index()  # type: pd.DataFrame
+
+    # Add new features:
+    # * Descriptive_GrLivArea
+    all_data['Descriptive_GrLivArea'] = all_data['GrLivArea']\
+        .map(lambda v: 'small' if v < 844 else 'medium' if v < 1761 else 'large')
 
     # Plot SalePrice histogram
     train.loc[:,'SalePrice'].plot(kind='hist')
@@ -59,7 +65,6 @@ def explore():
     # Is skewed. Use log-transform for analysis.
 
     # Check other numeric variables too for skewedness.
-    all_data = pd.concat((train, test)).reset_index() # type: pd.DataFrame
     skewed_feats = get_skewed_feats(all_data)
 
     # Take GrLivArea as an example of a skewed feature.
@@ -74,6 +79,8 @@ def explore():
 
     # Generate dummies for categoricals
     all_data = pd.get_dummies(all_data)
+
+    # TODO: impute categorical variable missing values according to the documentation
 
     # Check missing value amounts
     missing_feats = get_missing_feats(all_data)
@@ -122,7 +129,15 @@ def explore():
     # 	* BsmtQual_Gd
     # 	* MSZoning_C (all)
 
-    # TODO: look more into these attributes and see if model could be improved with feature engineering
+    X['GrLivArea'].describe()
+    X['GrLivArea'].plot(kind='hist')
+
+    # Create Descriptive_GrLivArea:
+    # * small < 844
+    # * 844 <= medium < 1761
+    # * 1761 <= large
+
+    scores = cross_val_score(Ridge(), X, y, cv=KFold())
 
     pass
 
@@ -131,6 +146,8 @@ def analyse():
 
     train, test = load()
     all_data = pd.concat((train, test)).reset_index()
+    all_data['Descriptive_GrLivArea'] = all_data['GrLivArea'] \
+        .map(lambda v: 'small' if v < 844 else 'medium' if v < 1761 else 'large')
     skewed_feats = get_skewed_feats(all_data)
     all_data.loc[:, skewed_feats] = np.log1p(all_data.loc[:, skewed_feats])
     all_data = pd.get_dummies(all_data)
@@ -155,5 +172,5 @@ def analyse():
 if __name__ == '__main__':
     random.seed(123)
     pd.set_option('display.width', 160)
-    explore()
-    #analyse()
+    #explore()
+    analyse()
