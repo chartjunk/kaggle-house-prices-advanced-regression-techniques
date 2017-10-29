@@ -46,7 +46,7 @@ def get_missing_feats(data: pd.DataFrame) -> pd.Series:
     return missing_feats
 
 
-def explore():
+def analyse():
 
     train, test = load()
     all_data = pd.concat((train, test)).reset_index()  # type: pd.DataFrame
@@ -137,40 +137,18 @@ def explore():
     # * 844 <= medium < 1761
     # * 1761 <= large
 
-    scores = cross_val_score(Ridge(), X, y, cv=KFold())
-
-    pass
-
-
-def analyse():
-
-    train, test = load()
-    all_data = pd.concat((train, test)).reset_index()
-    all_data['Descriptive_GrLivArea'] = all_data['GrLivArea'] \
-        .map(lambda v: 'small' if v < 844 else 'medium' if v < 1761 else 'large')
-    skewed_feats = get_skewed_feats(all_data)
-    all_data.loc[:, skewed_feats] = np.log1p(all_data.loc[:, skewed_feats])
-    all_data = pd.get_dummies(all_data)
-    missing_feats = get_missing_feats(all_data)
-    all_data = all_data.drop(missing_feats, axis=1)  # type: pd.DataFrame
-    all_data = all_data.fillna(all_data.median())
-    train = all_data.loc[slice(0, len(train) - 1), :]
-    test = all_data.loc[slice(len(train), len(all_data)), :]
-    X = train.loc[:,train.columns!='SalePrice']
-    y = train.loc[:,'SalePrice']
-    test = test.loc[:,test.columns!='SalePrice']
-
     model = Ridge()
-    model.fit(X, y)
+
+    scores = cross_val_score(model, X, y, cv=KFold())
 
     pred = model.predict(test)
     pred = np.expm1(pred)
-    save(pd.DataFrame({'SalePrice':pred,'Id':test['Id']}))
+    save(pd.DataFrame({'SalePrice': pred, 'Id': test['Id']}))
+
     pass
 
 
 if __name__ == '__main__':
     random.seed(123)
     pd.set_option('display.width', 160)
-    #explore()
     analyse()
