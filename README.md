@@ -6,4 +6,7 @@
 
 ~~RMSLE=.12708 and decreasing :d~~
 
-RMSLE=.12686 and decreasing :d
+~~RMSLE=.12686 and decreasing :d~~
+
+RMSLE=.12298 and decreasing :d
+
